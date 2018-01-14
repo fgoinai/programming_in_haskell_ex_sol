@@ -1,0 +1,6 @@
+*.hi
+*.exe
+*.o
+MEMO.md
+.vscode/
+main.hs
