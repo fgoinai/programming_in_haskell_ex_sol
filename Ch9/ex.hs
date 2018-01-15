@@ -1,5 +1,6 @@
 module Ch9.Ex where
 import Ch9.Content (Op(Add,Sub,Mul,Div), Expr(Val,App), eval, exprs, apply, split, Result, combine, choices)
+import Debug.Trace (traceShowId)
 
 -- 1
 -- from book
@@ -115,7 +116,8 @@ results6 ns  = [res | (ls,rs) <- split ns,
                       res     <- combine'' lx ry]
 
 diff6 :: [Int] -> Int -> [Result']
-diff6 ns n = [(e, abs $ m-n) | ns' <- choices' ns, (e,m) <- results6 ns']
+diff6 ns n = [(e, abs (m-n)) | ns' <- choices' ns, (e,m) <- results6 ns']
+    
 
 -- qsort
 order6 :: [Result'] -> [Result']
@@ -125,7 +127,29 @@ order6 (n:ns) = order6 l ++ (n : order6 r)
         l = [x | x <- ns, snd x <= snd n]
         r = [x | x <- ns, snd x > snd n]
 
+filMin :: [Result'] -> [Expr']
+filMin [] = []
+-- filMin (x:xs) = [fst y | y <- filter (\i -> snd i == snd x) (x:xs)]
+filMin (x:xs) = map fst (filter (\i -> snd i == snd x) (x:xs))
+
+-- 6b
 solution6 :: [Int] -> Int -> [Expr']
-solution6 ns n = filMin [x | x <- order6 $ diff6 ns n]
-        where
-            filMin (x:xs) = [fst y | y <- (x:xs), snd y == snd x]
+-- solution6 ns n = [x | x <- filMin $ order6 (diff6 ns n)]
+solution6 ns x = foldr (:) [] (filMin $ order6 $ diff6 ns x)
+
+-- 6c
+-- According to https://en.wikipedia.org/wiki/Computational_complexity_of_mathematical_operations
+complexity :: Expr' -> Int
+complexity (Val' _) = 0
+complexity (App' Add' l r) = 1 + complexity l + complexity r
+complexity (App' Sub' l r) = 1 + complexity l + complexity r
+complexity (App' Mul' l r) = 2 + complexity l + complexity r
+complexity (App' Div' l r) = 2 + complexity l + complexity r
+complexity (App' Exp' l r) = 4 + complexity l + complexity r
+
+complexityToResult' :: Expr' -> Result'
+complexityToResult' x = (x, complexity x)
+
+solution6ByComplexity :: [Int] -> Int -> [Expr']
+solution6ByComplexity ns n = filMin (order6 (map complexityToResult' (solution6 ns n)))
+-- this is work but too slow, dynamic programming is necessary to speed up the process
